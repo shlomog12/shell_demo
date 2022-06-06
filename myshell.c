@@ -36,8 +36,12 @@ while (1){
 
 
 
-// start commants:
+// *****************start commants:*******************************
 
+
+    if ((len > 1 ) && (! strcmp(argv[0], "echo")) && (! strcmp(argv[1], "$?"))){
+        sprintf(argv[1],"%d",status);
+    }
     if ((len > 2) && (! strcmp(argv[0], "prompt")) && (! strcmp(argv[1], "="))){
         myprompt = argv[2];
         continue;
@@ -81,7 +85,7 @@ while (1){
             dup(fd); 
             close(fd); 
         }
-        execvp(argv[0], argv);
+        status = execvp(argv[0], argv);
     }
     /* parent continues here */
     if (amper == 0)
