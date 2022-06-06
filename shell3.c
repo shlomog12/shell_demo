@@ -26,12 +26,11 @@ while (1)
     /* parse command line */
     i = 0;
     token = strtok (command," ");
-    while (token != NULL)
-    {
+    while (token != NULL){
         argv1[i] = token;
         token = strtok (NULL, " ");
         i++;
-        if (token && ! strcmp(token, "|")) {
+        if (token && !strcmp(token, "|")) {
             piping = 1;
             break;
         }
@@ -40,14 +39,12 @@ while (1)
     argc1 = i;
 
     /* Is command empty */
-    if (argv1[0] == NULL)
-        continue;
+    if (argv1[0] == NULL) continue;
 
     /* Does command contain pipe */
     if (piping) {
         i = 0;
-        while (token!= NULL)
-        {
+        while (token!= NULL){
             token = strtok (NULL, " ");
             argv2[i] = token;
             i++;
@@ -83,7 +80,7 @@ while (1)
             /* stdout is now redirected */
         } 
         if (piping) {
-            pipe (fildes);
+            pipe(fildes);
             if (fork() == 0) { 
                 /* first component of command line */ 
                 close(STDOUT_FILENO); 
