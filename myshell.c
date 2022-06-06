@@ -7,20 +7,45 @@
 #include "unistd.h"
 #include <string.h>
 
+
+
+void copyStr(char** oldStr, char** newStr,int len){
+    for (size_t i = 0; i < len; i++){
+        char* temp1 = (char*)malloc(strlen(oldStr[i])*sizeof(char));
+        strcpy(temp1,oldStr[i]);
+        newStr[i] = temp1;
+    };
+    newStr[len] = NULL;
+}
+
+
+
+
 int main() {
 char command[1024];
 char *token;
 char *outfile;
 int len, fd, amper, redirect, retid, status;
 char *argv[10];
-char* myprompt = "hello";
+char *temp[10];
+int temp_len;
 
+char* myprompt = "hello";
+int x = 0;
 while (1){
+    x++;
+
     printf("%s: ",myprompt);
+
+ 
+
+
     fgets(command, 1024, stdin);
     command[strlen(command) - 1] = '\0';
 
+
     /* parse command line */
+    
     len = 0;
     token = strtok (command," ");
     while (token != NULL){
@@ -30,12 +55,22 @@ while (1){
     }
     argv[len] = NULL;
 
+
+
+
     /* Is command empty */
     if (argv[0] == NULL) continue;
-
-
-
-
+    
+    if (! strcmp(argv[0], "!!")){
+        // printf("aa65\n");
+        len = temp_len;
+        copyStr(temp, argv, len);
+    }else{
+        // printf("aa69\n");
+        copyStr(argv,temp,len);
+        temp_len = len;
+    }
+    
 // *****************start commants:*******************************
 
 
@@ -48,7 +83,7 @@ while (1){
     }
 
 
-
+    
 
     /* Does command line end with & */ 
     if (! strcmp(argv[len - 1], "&")) {
@@ -57,12 +92,12 @@ while (1){
     }else amper = 0; 
 
 
-    if (! strcmp(argv[len - 2], ">")) {
+    if ((len > 2) && ! strcmp(argv[len - 2], ">")) {
         redirect = 1;
         argv[len - 2] = NULL;
         outfile = argv[len - 1];
         }
-    else if (! strcmp(argv[len - 2], "2>")){
+    else if ((len > 2) && ! strcmp(argv[len - 2], "2>")){
         redirect = 2;
         argv[len - 2] = NULL;
         outfile = argv[len - 1];
