@@ -62,17 +62,18 @@ while (1){
     if (argv[0] == NULL) continue;
     
     if (! strcmp(argv[0], "!!")){
-        // printf("aa65\n");
         len = temp_len;
         copyStr(temp, argv, len);
     }else{
-        // printf("aa69\n");
         copyStr(argv,temp,len);
         temp_len = len;
     }
     
 // *****************start commants:*******************************
 
+    if ((len > 1)&&  !strcmp(argv[0], "cd")){
+        chdir(argv[1]);
+    }
 
     if ((len > 1 ) && (! strcmp(argv[0], "echo")) && (! strcmp(argv[1], "$?"))){
         sprintf(argv[1],"%d",status);
