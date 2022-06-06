@@ -69,6 +69,12 @@ while (1)
         redirect = 0; 
 
     /* for commands not part of the shell command language */ 
+    printf("**************************8\n");
+    printf("argv1[0] :%s\n ",argv1[0]);
+    printf("argv1[1] :%s\n ",argv1[1]);
+    printf("argv1[2] :%s\n ",argv1[2]);
+    printf("argv2[0] :%s\n ",argv2[0]);
+    printf("**************************8\n");
 
     if (fork() == 0) { 
         /* redirection of IO ? */
@@ -80,7 +86,7 @@ while (1)
             /* stdout is now redirected */
         } 
         if (piping) {
-            pipe(fildes);
+            pipe (fildes);
             if (fork() == 0) { 
                 /* first component of command line */ 
                 close(STDOUT_FILENO); 
@@ -102,9 +108,10 @@ while (1)
         else
             execvp(argv1[0], argv1);
     }
+    
+    
     /* parent continues over here... */
     /* waits for child to exit if required */
-    if (amper == 0)
-        retid = wait(&status);
+    if (amper == 0) retid = wait(&status);
 }
 }

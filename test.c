@@ -1,32 +1,65 @@
-#include <sys/stat.h>
+/*
+** pipex.c - multipipes support
+*/
+
+#include <stdlib.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <sys/types.h>
 #include <sys/wait.h>
-#include <fcntl.h>
-#include "stdio.h"
-#include "errno.h"
-#include "stdlib.h"
-#include "unistd.h"
-#include <string.h>
-#include <signal.h> 
 
-int cnt = 0;
+/*
+ * loop over commands by sharing
+ * pipes.
+ */
+static void pipeline(char ***cmd){
+	int fd[2];
+	pid_t pid;
+	int fdd = 0;				/* Backup */
 
-void signal_handler(int signal){
-//   printf("Received SIGINT from CTRL-C but not quitting because it is overridden.\n");
-    printf("You typed Control-C!\n");
-    cnt++;
+	while (*cmd != NULL) {
+		pipe(fd);				/* Sharing bidiflow */
+		if ((pid = fork()) == -1) {
+			perror("fork");
+			exit(1);
+		}
+		else if (pid == 0) {
+			dup2(fdd, 0);
+			if (*(cmd + 1) != NULL) {
+				dup2(fd[1], 1);
+			}
+			close(fd[0]);
+			execvp((*cmd)[0], *cmd);
+			exit(1);
+		}
+		else {
+			wait(NULL); 		/* Collect childs */
+			close(fd[1]);
+			fdd = fd[0];
+			cmd++;
+		}
+	}
 }
 
+/*
+ * Compute multi-pipeline based
+ * on a command list.
+ */
+int
+main(int argc, char *argv[])
+{
+	// char *ls[] = {"ls", "-al", NULL};
+	// char *rev[] = {"rev", NULL};
+	// char *nl[] = {"nl", NULL};
+	// char *cat[] = {"cat", "-e", NULL};
+    char *cat[] = {"cat", "file1.txt", NULL};
+	char *sort[] = {"sort", NULL};
+	char *uniq[] = {"uniq", NULL};
 
-int main(){
 
-    // signal(SIGINT,  signal_handler);
-    while(1) {
-        if (cnt > 5){
-            return 0;
-        }
-    }
-    // signal(SIGINT,  signal_handler);
-
-    // signal(SIGINT, SIG_DFL);
-
+	// char *cat[] = {"cat", "-e", NULL};
+	// char **cmd[] = {ls, rev, nl, cat, NULL};
+    char **cmd[] = {cat, sort, uniq, NULL};
+	pipeline(cmd);
+	return (0);
 }
