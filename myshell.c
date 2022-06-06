@@ -38,9 +38,8 @@ while (1){
 
 // start commants:
 
-
     if ((len > 2) && (! strcmp(argv[0], "prompt")) && (! strcmp(argv[1], "="))){
-        strcpy(myprompt,argv[2]);
+        myprompt = argv[2];
         continue;
     }
 
