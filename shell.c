@@ -9,7 +9,7 @@
 #include <signal.h> 
 
 
-int runPipe(char ***argvs, int len, int amend, int redirect, char* outfile){
+int runPipe(char*** argvs, int len, int amend, int redirect, char* outfile){
   	int fildes[2];
 	int fd = 0;
     int status = -1;
@@ -95,7 +95,7 @@ int initArgs(char ***argvs, int *lens){
     return piping;
 }
 
-void printArgvs(char ***argvs, int *lens, int piping){
+void printArgvs(char*** argvs, int *lens, int piping){
     for (size_t i = 0; i <= piping; i++){
         int cur_len = lens[i];
         printf("************* i = %ld len = %d  ****************\n",i,cur_len);
@@ -105,46 +105,100 @@ void printArgvs(char ***argvs, int *lens, int piping){
     }
 }
 
-void saveEnv(char **current_commends){
-    int len = strlen(current_commends[0])+strlen(current_commends[1])+strlen(current_commends[2]);
+void saveEnv(char* key, char* value){
+    int len = strlen(key)+strlen(value)+1;
     char* str =(char*) malloc(len*sizeof(char));
-    strcat(str,current_commends[0]);
-    strcat(str,current_commends[1]);
-    strcat(str,current_commends[2]);
+    strcat(str,key);
+    strcat(str,"=");
+    strcat(str,value);
     putenv(str);
 }
 
-void printEnv(char *key){
-    char val[30];
-    if (!getenv(key)) val[0] = '\0';
-    else snprintf(val, 10, "%s", getenv(key));
+char* getEnvByKey(char* key){
+    // printf("k = %s\n",key);
+    char* val = (char*) malloc(30);
+    if (!getenv(key)){
+        val[0] = '\0';
+    } 
+    else {
+        snprintf(val, 30, "%s", getenv(key));
+        // printf("val = %s\n",val);
+    }
+    return val;
+}
+
+void printEnv(char* key){
+    char* val = getEnvByKey(key);
     printf("%s",val);
     if (val[strlen(val)-1] != '\n') printf("\n");
 }
 
+void extractEnv(char** commends ,int len){
+    for (size_t i = 0; i < len; i++){
+        if (commends[i][0] == '$'){
+            commends[i] = getEnvByKey(commends[i]+1);
+        } 
+    }
+}
+
+void spacialInput(char** current_commends,int len , char** myprompt){
+        char* first = current_commends[0];
+        extractEnv(current_commends+1 ,len-1);
+        if (!strcmp(first, "quit") || !strcmp(first, "quit\n")) exit(0);
+        else if (len <= 1) return;
+        else if (!strcmp(first, "cd")) chdir(current_commends[1]);
+        else if (!strcmp(first, "read")){
+            char val_of_read[1024];
+            fgets(val_of_read, 1024, stdin);
+            saveEnv(current_commends[1],val_of_read);
+        }
+        else if (len == 2) return;
+        else if (!strcmp(first, "prompt") && !strcmp(current_commends[1], "=")) *myprompt = current_commends[2];
+        else if (first[0] == '$' && !strcmp(current_commends[1], "=")){
+            current_commends[0] = current_commends[0]+1;
+            saveEnv(current_commends[0],current_commends[2]);
+        }
+}
+
+void saveStatus(int status){
+    char string_of_staus[10];
+    sprintf(string_of_staus,"%d",status);
+    saveEnv("?",string_of_staus);
+}
+
+int getAmper(char** current_commends, int len){
+    if (strcmp(current_commends[len - 1], "&")) return 0;
+    current_commends[len - 1] = NULL;
+    return 1;
+}
+
+int getRedirect(char** current_commends,int len){
+    if ((len > 2) && !strcmp(current_commends[len - 2], ">")) return 1;
+    if ((len > 2) && !strcmp(current_commends[len - 2], "2>")) return 2;
+    return 0; 
+}
+
 int main() {
     signal(SIGINT,  signal_handler);
-    char *outfile;
-    char *temp[10];
-    char **argvs[20];
+    char* outfile;
+    char* temp[10];
+    char** argvs[20];
     int temp_len = -1;
     int len, amper, redirect, status, piping;
     int lens[20];
-    int pos = 0;
 
     char* myprompt = "hello";
-    // initArgs(argvs);
+
     while (1){
         printf("%s: ",myprompt);
         piping = initArgs(argvs,lens);
-        // printArgvs(argvs, lens, piping);
         char** current_commends = argvs[0];
         len = lens[0];
-
         /* Is command empty */
         if (current_commends[0] == NULL) continue;
 
     // *****************start commants:*******************************
+        
         if (!strcmp(current_commends[0], "!!")){
             if (temp_len == -1) continue;
             len = temp_len;
@@ -153,59 +207,18 @@ int main() {
             copyStr(current_commends,temp,len);
             temp_len = len;
         }
-        if (!strcmp(current_commends[0], "quit") || !strcmp(current_commends[0], "quit\n")){
-            exit(0);
-        }
-        if ((len > 1)&&  !strcmp(current_commends[0], "cd")){
-            chdir(current_commends[1]);
-        }
-        if ((len > 1 ) && (! strcmp(current_commends[0], "echo")) && (! strcmp(current_commends[1], "$?"))){
-            sprintf(current_commends[1],"%d",status);
-        }
-        if ((len > 1 ) && (! strcmp(current_commends[0], "echo")) && current_commends[1][0]== '$'){
-            printEnv(current_commends[1]+1); continue;
-        }
-
-
-        if ((len > 2) && (! strcmp(current_commends[0], "prompt")) && (! strcmp(current_commends[1], "="))){
-            myprompt = current_commends[2];
-            continue;
-        }
-        /* Does command line end with & */ 
-        if (! strcmp(current_commends[len - 1], "&")) {
-            amper = 1;
-            current_commends[len - 1] = NULL;
-        }else amper = 0; 
-
-
-        if ((len > 2) && ! strcmp(current_commends[len - 2], ">")) {
-            redirect = 1;
+        spacialInput(current_commends, len, &myprompt);
+        int amper = getAmper(current_commends,len);
+        int redirect = getRedirect(current_commends,len);
+        if (redirect > 0){
             current_commends[len - 2] = NULL;
             outfile = current_commends[len - 1];
-            }
-        else if ((len > 2) && !strcmp(current_commends[len - 2], "2>")){
-            redirect = 2;
-            current_commends[len - 2] = NULL;
-            outfile = current_commends[len - 1];
-        }else redirect = 0; 
+        }
 
-        if (len > 1 && !strcmp(current_commends[0], "read")){
-            char val_of_read[1024];
-            fgets(val_of_read, 1024, stdin);
-            char* read_input[3] = {current_commends[1],"=",val_of_read};
-            saveEnv(read_input);
-        }
-        if (len > 2 && current_commends[0][0] == '$'){
-            current_commends[0] = current_commends[0]+1;
-            saveEnv(current_commends);
-        }
-      
-        
         status = runPipe(argvs, piping+1,amper, redirect, outfile);
-
+        saveStatus(status);
     }
 }
-
 
 
 
